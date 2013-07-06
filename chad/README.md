@@ -121,7 +121,7 @@ scala> DB.withSession { implicit session =>
      | }
 res5: Long = 1
 ```
-We have used the `play.api.db.slick.DB` object's `withSession` method to implicitly provide a databavse connection to all of the code in the supplied block.  Inside of the code block, we first create an object to represent the `Speaker` record in our database. We then use our `Speakers` class to insert that object into the database.  Notice how we used `autoInc` so that when we call `insert` it returns the freshly inserted row's primary key value, which is returned as from the block.  Since this is our first record in thet able, its value is 1.
+We have used the `play.api.db.slick.DB` object's `withSession` method to implicitly provide a databavse connection to all of the code in the supplied block.  Inside of the code block, we first create an object to represent the `Speaker` record in our database. We then use our `Speakers` class to insert that object into the database.  Notice how we used `autoInc` so that when we call `insert` it returns the freshly inserted row's primary key value, which is returned as from the block.  Since this is our first record in the table, its value is 1.
 
 Inserting another row provides the expected result:
 ```scala
@@ -176,7 +176,7 @@ Since we haven't yet added our talks table we'll do that now.
 
 The procedure is very similar to how we created the `Speakers` and `Speaker` classes.  We can also add these to `app/models/Models.scala`.
 ```scala
-ase class Talk(description: String, speakerId: Long, id: Option[Long] = None)
+case class Talk(description: String, speakerId: Long, id: Option[Long] = None)
 
 class Talks extends Table[Talk]("TALKS") {
   def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
@@ -206,3 +206,6 @@ class Talks extends Table[Talk]("TALKS") {
   }
 }
 ```
+Most of this is familiar from our implementation of `Speakers`, with two small exceptions. The first is the definition of the `speaker` method. The `foreignKey` method constructs a query method for us given the constraints of a foreign key relationship in our database. The function given at the end of the call specifies the target column of the foreign table to use in generating a query for the related record.  Concretely, this definition defines a foreign key relationship called "talks_speaker_fk" on the `TALKS` table's `speakerId` column referencing the `SPEAKERS` table (which we have captured the definition of in our `speakers` object) and defines a method for querying `Speaker` objects by using the `SPEAKERS` table's `id` field.
+
+The second interesting addition is the `findTalks` method. This method shows how Slick allows you to use Scala `for` comprehensions to generate database queries.  Given an instance of `Speaker`, the `findTalks` method issues a SQL `SELECT` on the `TALKS` table for all rows whose `speakerId` is the same as the given `Speaker`. We then execute the query and extract those rows as a `List` of `Talk` instances.
