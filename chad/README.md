@@ -170,7 +170,7 @@ res10: List[models.Speaker] = List(Speaker(Dave,Publisher,Some(3)), Speaker(Nila
 ```
 ## Displaying in a Web view
 
-Now that we can create and query speakers from the database, let's try to implement a full but small application feature.  We are going to add "talks" to our sample database. The index page of our little application will show a full list of talks with title, abstract and speaker name. We should then be able to click the speaker's name to see a detail page for that speaker.
+Now that we can create and query speakers from the database, let's try to implement a full but small application feature.  We are going to add "talks" to our sample database. The index page of our little application will show a full list of speakers with the title and abstract of each of their associated talks.
 
 Since we haven't yet added our talks table we'll do that now.
 
@@ -208,4 +208,55 @@ class Talks extends Table[Talk]("TALKS") {
 ```
 Most of this is familiar from our implementation of `Speakers`, with two small exceptions. The first is the definition of the `speaker` method. The `foreignKey` method constructs a query method for us given the constraints of a foreign key relationship in our database. The function given at the end of the call specifies the target column of the foreign table to use in generating a query for the related record.  Concretely, this definition defines a foreign key relationship called "talks_speaker_fk" on the `TALKS` table's `speakerId` column referencing the `SPEAKERS` table (which we have captured the definition of in our `speakers` object) and defines a method for querying `Speaker` objects by using the `SPEAKERS` table's `id` field.
 
+FIXME: we don't use the foreignKey, nor could I get it to work, but we should show it.
+
 The second interesting addition is the `findTalks` method. This method shows how Slick allows you to use Scala `for` comprehensions to generate database queries.  Given an instance of `Speaker`, the `findTalks` method issues a SQL `SELECT` on the `TALKS` table for all rows whose `speakerId` is the same as the given `Speaker`. We then execute the query and extract those rows as a `List` of `Talk` instances.
+
+Now we know how to query the database, and we're ready to hook things up to a user interface. As always with Play!, we'll start with the controller.  To keep things simple, we'll replace the default `index` action in the `ApplicationController` with our own code:
+
+```scala
+package controllers
+
+import play.api._
+import play.api.mvc._
+import models._
+
+object Application extends Controller {
+
+  def index = Action {
+    Ok(views.html.index(Speaker.findAll))
+  }
+}
+```
+
+We first import the table objects from our `models` package. Then in the `index` action, we call our `speakers.findAll` method to return a list of all speakers in the database. We then provide that as data to the view.
+
+Moving on to the view, we iterate over the provided list of speakers and display their names and their talks:
+```
+@(speakers: List[models.Speaker])
+
+@main("Scala Speakers") {
+  <div>
+    @for(speaker <- speakers) {
+      <p>
+      <label>@speaker.name</label>
+      <ul>
+      @for(talk <- speaker.submittedTalks) {
+      <li>@talk.description</li>
+      }
+      </ul>
+      </p>
+    }
+  </div>
+}
+```
+In the view, we loop over the supplied speakers and ask each one for their `List` of talks. We then iterate over that `List`, displaying the description.  To make this more convenient, we have created a new method on the `Speaker` class called `submittedTalks`.  Here's what that the full `Speaker` class looks like now:
+
+```scala
+case class Speaker(name: String, bio: String, id: Option[Long] = None) {
+  def submittedTalks = {
+    talks.findTalks(this)
+  }
+}
+```
+Slick is a rich and feature-filled library. This recipe gives you an introduction to how to integrate it into a Play! application. To get to know the full capabilites of Slick, see the project's documentation at it's home page: http://slick.typesafe.com/.

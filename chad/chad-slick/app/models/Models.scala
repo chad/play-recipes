@@ -14,7 +14,12 @@ object alltables {
 import models.alltables._
 
 
-case class Speaker(name: String, bio: String, id: Option[Long] = None)
+case class Speaker(name: String, bio: String, id: Option[Long] = None) {
+  def submittedTalks = {
+    talks.findTalks(this)
+  }
+}
+
 
 class Speakers extends Table[Speaker]("SPEAKERS") {
   def id =   column[Long]("id", O.PrimaryKey, O.AutoInc)
@@ -26,7 +31,6 @@ class Speakers extends Table[Speaker]("SPEAKERS") {
   def insert(speaker: Speaker) = DB.withSession { implicit session =>
       autoInc.insert(speaker)
   }
-
 }
 object Speakers {
   def findAll: List[Speaker] = DB.withSession {implicit session =>

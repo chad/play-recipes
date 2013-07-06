@@ -1,7 +1,16 @@
-@(message: String)
+@(speakers: List[models.Speaker])
 
-@main("Welcome to Play 2.1") {
-    
-    @play20.welcome(message)
-    
+@main("Scala Speakers") {
+  <div>
+    @for(speaker <- speakers) {
+      <p>
+      <label>@speaker.name</label>
+      <ul>
+      @for(talk <- speaker.submittedTalks) {
+      <li>@talk.description</li>
+      }
+      </ul>
+      </p>
+    }
+  </div>
 }
