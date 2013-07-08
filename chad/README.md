@@ -206,9 +206,20 @@ class Talks extends Table[Talk]("TALKS") {
   }
 }
 ```
-Most of this is familiar from our implementation of `Speakers`, with two small exceptions. The first is the definition of the `speaker` method. The `foreignKey` method constructs a query method for us given the constraints of a foreign key relationship in our database. The function given at the end of the call specifies the target column of the foreign table to use in generating a query for the related record.  Concretely, this definition defines a foreign key relationship called "talks_speaker_fk" on the `TALKS` table's `speakerId` column referencing the `SPEAKERS` table (which we have captured the definition of in our `speakers` object) and defines a method for querying `Speaker` objects by using the `SPEAKERS` table's `id` field.
+Most of this is familiar from our implementation of `Speakers`, with two small exceptions. The first is the definition of the `speaker` method. The `foreignKey` method constructs a query method for us given the constraints of a foreign key relationship in our database. The function given at the end of the call specifies the target column of the foreign table to use in generating a query for the related record.  Concretely, this definition defines a foreign key relationship called "talks_speaker_fk" on the `TALKS` table's `speakerId` column referencing the `SPEAKERS` table (which we have captured the definition of in our `speakers` object) and defines a method for associating `Speaker` objects with their associated talks, joining on the `Speaker`'s `id`.
 
-FIXME: we don't use the foreignKey, nor could I get it to work, but we should show it.
+We can use this foreign key relationship like this:
+```scala
+ DB.withSession { implicit session =>
+      val q = for {
+        t <- talks
+
+        s <- t.speaker
+      } yield { (t.description, s.name) }
+      q.list()
+    }
+```
+Note, that for this to work you'll need to either wrap it in a method in your `models/Models.scala` file or import `import play.api.db.slick.Config.driver.simple._` in the console, since this code relies on an implicit conversion defined in that package.
 
 The second interesting addition is the `findTalks` method. This method shows how Slick allows you to use Scala `for` comprehensions to generate database queries.  Given an instance of `Speaker`, the `findTalks` method issues a SQL `SELECT` on the `TALKS` table for all rows whose `speakerId` is the same as the given `Speaker`. We then execute the query and extract those rows as a `List` of `Talk` instances.
 
